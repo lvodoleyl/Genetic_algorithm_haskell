@@ -5,6 +5,8 @@ import Crossingover
 import Random_ 
 import Common
 import Prelude
+import Result
+import System.IO.Unsafe
 
 -- основная итерация цикла
 result :: Parametrs -> [Fenotype] -> Optimize -> [Fenotype]
@@ -16,52 +18,58 @@ result (P popul sel c c_n c_p m_p s s_n) f o = f_res
         f_res = list_fen g_mut o
 
 -- по количеству итераций
-go_iter :: Parametrs -> [Fenotype] -> Optimize -> [Fenotype]
-go_iter (P popul _ _ _ _ _ _ 0) fenot _ = fenot
-go_iter (P popul sel c c_n c_p m_p s s_n) fenot optim = go_iter (P popul sel c c_n c_p m_p s (s_n-1)) fenot_new optim
-    where
-        fenot_new = result (P popul sel c c_n c_p m_p s s_n) fenot optim
-
+go_iter_io :: Parametrs -> [Fenotype] -> Optimize -> IO ([Fenotype])
+go_iter_io (P popul sel c c_n c_p m_p s s_n) fenot optim = case (s_n == 0) of 
+    True -> return fenot
+    False -> do
+        fenot_new <- return $ result (P popul sel c c_n c_p m_p s s_n) fenot optim
+        write_to_file (form_string optim fenot_new)
+        go_iter_io (P popul sel c c_n c_p m_p s (s_n-1)) fenot_new optim
 -- по поиску минимальной границы
-go_minimal :: Parametrs -> [Fenotype] -> Optimize -> Int -> [Fenotype]
-go_minimal (P popul sel c c_n c_p m_p s s_n) fenot optim protect
-    | or [border (max_fen fenot (Fen (Gen [0] 0) (-1000000.0) 0)) (fromIntegral s_n), protect==0] = fenot
-    | otherwise = go_minimal (P popul sel c c_n c_p m_p s s_n) fenot_new optim (protect-1)
-        where
-            fenot_new = result (P popul sel c c_n c_p m_p s s_n) fenot optim
-
+go_minimal_io :: Parametrs -> [Fenotype] -> Optimize -> Int -> IO ([Fenotype])
+go_minimal_io (P popul sel c c_n c_p m_p s s_n) fenot optim protect = case (or [border (max_fen fenot (Fen (Gen [0] 0) (-1000000.0) 0)) (fromIntegral s_n), protect==0]) of
+    True -> return fenot
+    False -> do
+        fenot_new <- return $ result (P popul sel c c_n c_p m_p s s_n) fenot optim
+        write_to_file (form_string optim fenot_new)
+        go_minimal_io (P popul sel c c_n c_p m_p s s_n) fenot_new optim (protect-1)
 -- по не изменению качества
-go_quality :: Parametrs -> [Fenotype] -> Optimize -> Int -> Fenotype -> [Fenotype]
-go_quality (P popul sel c c_n c_p m_p s s_n) fenot optim cycle prev
-    | cycle == s_n = fenot
-    | quality (max_fen fenot (Fen (Gen [0] 0) (-1000000.0) 0)) prev = go_quality (P popul sel c c_n c_p m_p s s_n) fenot_new optim 0 (max_fen fenot (Fen (Gen [0] 0) (-1000000.0) 0))
-    | otherwise = go_quality (P popul sel c c_n c_p m_p s s_n) fenot_new optim (cycle+1) prev
-        where
-            fenot_new = result (P popul sel c c_n c_p m_p s s_n) fenot optim
-
+go_quality_io :: Parametrs -> [Fenotype] -> Optimize -> Int -> Fenotype -> IO([Fenotype])
+go_quality_io (P popul sel c c_n c_p m_p s s_n) fenot optim cycle prev = case (cycle == s_n) of
+    True -> return fenot 
+    False -> do
+        fenot_new <- return $ result (P popul sel c c_n c_p m_p s s_n) fenot optim
+        write_to_file (form_string optim fenot_new)
+        if (quality (max_fen fenot (Fen (Gen [0] 0) (-1000000.0) 0)) prev)
+            then go_quality_io (P popul sel c c_n c_p m_p s s_n) fenot_new optim 0 (max_fen fenot (Fen (Gen [0] 0) (-1000000.0) 0))
+            else go_quality_io (P popul sel c c_n c_p m_p s s_n) fenot_new optim (cycle+1) prev
 -- выбор способа завершения
-multiplexor_end :: Parametrs -> Optimize -> [Fenotype] -> [Fenotype]
+multiplexor_end :: Parametrs -> Optimize -> [Fenotype] -> IO([Fenotype])
 multiplexor_end (P popul sel c c_n c_p m_p s s_n) o fen 
-    | s == 1 = go_quality (P popul sel c c_n c_p m_p s s_n) fen o 0 (max_fen fen (Fen (Gen [0] 0) (-1000000.0) 0))
-    | s == 3 = go_minimal (P popul sel c c_n c_p m_p s s_n) fen o 1000000
-    | otherwise = go_iter (P popul sel c c_n c_p m_p s s_n) fen o
+    | s == 1 = go_quality_io (P popul sel c c_n c_p m_p s s_n) fen o 0 (max_fen fen (Fen (Gen [0] 0) (-1000000.0) 0))
+    | s == 3 = go_minimal_io (P popul sel c c_n c_p m_p s s_n) fen o 10000
+    | otherwise = go_iter_io (P popul sel c c_n c_p m_p s s_n) fen o
 
 main::IO()
 main = do
-    p1 <- return $ (\x -> 3*sin(x*0.1)*x) -- функция
+    clear_file
+    p1 <- return $ (\x -> sin(x*0.1)*exp(x*0.01)) -- функция
     p2 <- return $ 0.0 --нижняя граница
-    p3 <- return $ 31.0 --верхняя граница
-    p4 <- return $ 1.0 --погрешность или шаг
-    p5 <- return $ 30 --количество особей в популяции
-    p6 <- return $ 3 --тип селекции 1 - рулетка, 2 - стохастика, 3 -турнир, 4 - ранг, 5 - сл.в.
+    p3 <- return $ 700.0 --верхняя граница
+    p4 <- return $ 0.01 --погрешность или шаг
+    p5 <- return $ 10 --количество особей в популяции
+    p6 <- return $ 2 --тип селекции 1 - рулетка, 2 - стохастика, 3 -турнир, 4 - ранг, 5 - сл.в.
     p7 <- return $ 1 --тип кроссовера 1 - многоточ, 2 - единый
-    p8 <- return $ 1 --количество точек кроссинговера (1 - одноточечный)
-    p9 <- return $ 0.5 --вероятность кроссинговера
-    p10 <-return $ 0.1 --вероятность мутации
+    p8 <- return $ 3 --количество точек кроссинговера (1 - одноточечный)
+    p9 <- return $ 1.0 --вероятность кроссинговера
+    p10 <-return $ 0.5 --вероятность мутации
     p11 <-return $ 1 --критерий остановки 1 - не улучшается N популяций, 2 - лимит популяции, 3 - минимальный прикол
-    p12 <-return $ 40 --либо популяций ,либо минимальное значение фитнесс-функции
+    p12 <-return $ 10--либо популяций ,либо минимальное значение фитнесс-функции
     p <- return $ P p5 p6 p7 p8 p9 p10 p11 p12
-    o <- return $ Opt p2 p3 p4 p1
-    g <- return $ init_gens p5 5 --надо высчитывать этот шаг и сколько генов надо
-    f <- return $ multiplexor_end p o (list_fen g o) 
-    print $ max_fen f (Fen (Gen [0] 0) (-1000000.0) 0)
+    n_gen <- return $ (getNumberGen p2 p3 p4)
+    g <- return $ init_gens p5 n_gen
+    o <- return $ Opt p2 p3 (correction_step n_gen p2 p3) p1
+    f <- return $ multiplexor_end p o (list_fen g o)
+    print $ max_fen (unsafePerformIO f) (Fen (Gen [0] 0) (-1000000.0) 0)
+    --print $ form_string o f
+    return()

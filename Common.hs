@@ -1,5 +1,6 @@
 module Common where 
 import Random_
+import Prelude
 
 data Parametrs = P {populat::Int,       -- популяция
                     select::Int,        -- тип селекции
@@ -87,3 +88,11 @@ quality :: Fenotype -> Fenotype -> Bool
 quality (Fen _ f1 _) (Fen _ f2 _)
     | f1 > f2 = True
     | otherwise = False 
+
+-- необходимое количество генов 
+getNumberGen :: Double -> Double -> Double -> Int
+getNumberGen down up delt = round $ (logBase 2.0 ((up - down)/delt)) + 0.49
+
+-- коррекция шага
+correction_step :: Int -> Double -> Double -> Double
+correction_step n down up = (up - down)/(2**(fromIntegral n)-1) 

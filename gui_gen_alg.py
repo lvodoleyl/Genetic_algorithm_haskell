@@ -1,11 +1,11 @@
 from tkinter import *
 from tkinter import ttk
 import matplotlib.pyplot as plt
-from time import time
 from tkinter.ttk import Combobox, Checkbutton
-import math
+import sympy as s
+from math import *
 def func(x):
-    return 3*math.sin(0.1*x)*x
+    return 3*sin(0.1*x)*x
 def grafs():
     g = [float(i) for i in range(0, 31)]
     y = [func(i) for i in g]

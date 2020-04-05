@@ -55,12 +55,21 @@ get_probability [] _ _ = []
 get_probability ((Fen a value p):t) sum cycle = 
     (Fen a value prob):(get_probability t sum prob)
         where 
-            prob = cycle + value / sum
+            prob = cycle + _value / sum
+            _value
+                | and [value < 0, value > -1] = 1.0
+                | value < 0 = 1/(- value)
+                | otherwise = value
 
 -- подсчет суммы фитнесс функции по всей популяции для выставления вероятностей
 sum_fen :: [Fenotype] -> Double
 sum_fen [] = 0
-sum_fen ((Fen g fitness prob):t) = fitness + (sum_fen t)
+sum_fen ((Fen g fitness prob):t) = _value + (sum_fen t)
+    where
+        _value
+            | and [fitness < 0, fitness > -1] = 1.0
+            | fitness < 0 = 1/(- fitness)
+            | otherwise = fitness
 
 -- турнир
 tournament :: (Fenotype, Fenotype, Fenotype) -> Genotype
