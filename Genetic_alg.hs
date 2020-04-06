@@ -6,6 +6,7 @@ import Random_
 import Common
 import Prelude
 import Result
+import System.Environment
 import System.IO.Unsafe
 
 -- основная итерация цикла
@@ -52,24 +53,28 @@ multiplexor_end (P popul sel c c_n c_p m_p s s_n) o fen
 
 main::IO()
 main = do
+    x <- getArgs
+    print x
     clear_file
     p1 <- return $ (\x -> sin(x*0.1)*exp(x*0.01)) -- функция
     p2 <- return $ 0.0 --нижняя граница
     p3 <- return $ 700.0 --верхняя граница
     p4 <- return $ 0.01 --погрешность или шаг
-    p5 <- return $ 10 --количество особей в популяции
+    p5 <- return $ 30 --количество особей в популяции
     p6 <- return $ 2 --тип селекции 1 - рулетка, 2 - стохастика, 3 -турнир, 4 - ранг, 5 - сл.в.
     p7 <- return $ 1 --тип кроссовера 1 - многоточ, 2 - единый
     p8 <- return $ 3 --количество точек кроссинговера (1 - одноточечный)
     p9 <- return $ 1.0 --вероятность кроссинговера
     p10 <-return $ 0.5 --вероятность мутации
     p11 <-return $ 1 --критерий остановки 1 - не улучшается N популяций, 2 - лимит популяции, 3 - минимальный прикол
-    p12 <-return $ 10--либо популяций ,либо минимальное значение фитнесс-функции
+    p12 <-return $ 150 --либо популяций ,либо минимальное значение фитнесс-функции
     p <- return $ P p5 p6 p7 p8 p9 p10 p11 p12
     n_gen <- return $ (getNumberGen p2 p3 p4)
     g <- return $ init_gens p5 n_gen
     o <- return $ Opt p2 p3 (correction_step n_gen p2 p3) p1
     f <- return $ multiplexor_end p o (list_fen g o)
-    print $ max_fen (unsafePerformIO f) (Fen (Gen [0] 0) (-1000000.0) 0)
+    res <- return $ max_fen (unsafePerformIO f) (Fen (Gen [0] 0) (-1000000.0) 0)
+    print $ res
+    write_to_file (result_string o res)
     --print $ form_string o f
     return()

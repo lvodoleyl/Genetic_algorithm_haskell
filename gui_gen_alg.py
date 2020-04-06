@@ -1,23 +1,110 @@
 from tkinter import *
-from tkinter import ttk
+from tkinter import ttk, messagebox
 import matplotlib.pyplot as plt
 from tkinter.ttk import Combobox, Checkbutton
 import sympy as s
 from math import *
-def func(x):
-    return 3*sin(0.1*x)*x
-def grafs():
-    g = [float(i) for i in range(0, 31)]
-    y = [func(i) for i in g]
-    plt.title('График функции ')
-    plt.grid(True)
-    plt.plot(g, y, color='red', label='f(x)')
-    plt.show()
+import subprocess
+import time
 
+def run_app(event):
+    try:
+        _func = func.get()
+        _down = float(down_bord.get())
+        _up = float(up_bord.get())
+        _delta = float(delta.get())
+        _popul = int(popul.get())
+        _type_select = select_list.get()
+        _type_cross = cross_list.get()
+        _cross_m = int(cross_n.get())
+        _cross_p = float(cross_p.get())
+        _mutat_p = float(mut_p.get())
+        _type_end = end.get()
+        _end_n = int(end_n.get())
+    except:
+        messagebox.showinfo('Неправильный ввод', 'Неправильный формат данных, или не все поля заполнены!')
+        return 
+    try:
+        _func_py = s.S(_func)
+        a = _func_py.subs('x', 3)
+        float(a)
+    except:
+        messagebox.showinfo('Неправильный ввод', 'Неправильно описана функция. Используйте наименование аргумента, как "x"!')
+        return
+    #print(_func, _down, _up, _delta, _popul, _type_select, _type_cross, 
+    #    _cross_m, _cross_p, _mutat_p, _type_end,_end_n)
+    f = open('genetic_alg.txt', 'r')
+    x = [_down+(_up - _down)/1000*i for i in range(1000)]
+    root.update()
+    y = [_func_py.subs('x', i) for i in x]
+    root.update()
+    if chk_state.get():
+        tab_multiplexor.select(1)
+        for line in f:
+            time.sleep(0.3)
+            if line.split(" ")[0] != "Result:":
+                list_vis_x = []
+                list_vis_y = []
+                list_arg_res = line.split(" ")
+                for arg_res in list_arg_res:
+                    try:
+                        tmp = arg_res.split(";")
+                        list_vis_x.append(float(tmp[0]))
+                        list_vis_y.append(float(tmp[1]))
+                    except:
+                        continue
+                fig, ax = plt.subplots(figsize=(4.6,2.5))
+                ax.set_title(_func)
+                #ax.set_title('Генетический алгоритм')
+                #ax.set_xlabel('x')
+                #ax.set_ylabel(_func)
+                ax.grid()      # включение отображение сетки
+                ax.plot(x, y)
+                ax.scatter(x = list_vis_x, y = list_vis_y, color="red")
+                print(list_vis_x)
+                print(list_vis_y)
+                fig.savefig('gen_alg')
+                im = PhotoImage(file='gen_alg.png')
+                modeling = Label(tab_models, image=im)
+                modeling.grid (row = 1, column = 1)
+                root.update()
+            else:
+                tab_multiplexor.select(2)
+                root.update()
+                res = line.split(" ")[1]
+                res_x, res_y = res.split(";")[0], res.split(";")[1]
+                func_i = Label(tab_result, text = 'Функция f(x)='+_func, width = 55, height = 1,  fg = 'black',font='arial 10')
+                func_i.grid(row = 1, column = 1)
+                res_y_i = Label(tab_result, text = 'Максимальный найденный элемент f(x)='+res_y, width = 55, height = 1,  fg = 'black',font='arial 10')
+                res_y_i.grid(row = 2, column = 1)
+                res_x_i = Label(tab_result, text = 'Аргумент х='+res_x, width = 55, height = 1,  fg = 'black',font='arial 10')
+                res_x_i.grid(row = 3, column = 1)
+                file_i = Label(tab_result, text = 'Информация о работе алгоритма представлена в файле "genetic_alg.txt"', width = 55, height = 1,  fg = 'black',font='arial 10')
+                file_i.grid(row = 4, column = 1)
+                root.update()
+    else:
+        tab_multiplexor.select(2)
+        for line in f:
+            if line.split(" ")[0] != "Result:":
+                continue
+            root.update()
+            res = line.split(" ")[1]
+            res_x, res_y = res.split(";")[0], res.split(";")[1]
+            func_i = Label(tab_result, text = 'Функция f(x)='+_func, width = 60, height = 1,  fg = 'black',font='arial 10')
+            func_i.grid(row = 1, column = 1)
+            res_y_i = Label(tab_result, text = 'Максимальный найденный элемент f(x)='+res_y, width = 40, height = 1,  fg = 'black',font='arial 10')
+            res_y_i.grid(row = 2, column = 1)
+            res_x_i = Label(tab_result, text = 'Аргумент х='+res_x, width = 60, height = 1,  fg = 'black',font='arial 10')
+            res_x_i.grid(row = 3, column = 1)
+            file_i = Label(tab_result, text = 'Информация о работе алгоритма представлена в файле "genetic_alg.txt"', width = 60, height = 1,  fg = 'black',font='arial 10')
+            file_i.grid(row = 4, column = 1)
+            root.update()
+    f.close()
+    return 
 
 root = Tk()
 root.title("Генетический алгоритм")
-root.geometry("450x270")
+root.geometry("450x285")
 tab_multiplexor = ttk.Notebook(root)
 tab_parameters = ttk.Frame(tab_multiplexor)
 tab_models = ttk.Frame(tab_multiplexor)
@@ -81,11 +168,12 @@ end_n_i = Label(tab_parameters, text = 'N: ', width = 1, height = 1,  fg = 'blac
 end_n_i.grid(row=8, column =5)
 end_n = Entry (tab_parameters, width=5)
 end_n.grid (row = 9, column = 5)
-chk_state = BooleanVar()  
-chk_state.set(True) 
-chk = Checkbutton(tab_parameters, text='Включить моделирование', var=chk_state)  
+chk_state = IntVar()  
+chk_state.set(1) 
+chk = Checkbutton(tab_parameters, text='Включить моделирование', var=chk_state,onvalue=1,offvalue=0)  
 chk.grid(column=1, row=10, columnspan = 2, pady=10)  
-run_gen_alg_button = Button(tab_parameters, text = 'Запустить', width = 10, height = 2, bg = 'green',fg = 'black', font = 'arial 10')
+run_gen_alg_button = Button(tab_parameters,  text = 'Запустить', width = 10, height = 2, bg = 'green',fg = 'black', font = 'arial 10')
 run_gen_alg_button.grid(row=10, column = 5, columnspan = 3)
+run_gen_alg_button.bind("<Button-1>", run_app)
 tab_multiplexor.pack(expand=1, fill='both')  
 root.mainloop()
