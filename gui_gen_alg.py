@@ -13,8 +13,6 @@ def info_func_button(s):
     pi, exp(x), sqrt(x)
     abs(x),log(x) - base e
     (**), ex. 2**3 = 8
-    log10(x) - base 10
-    log2(x) - base 2
     sin(x),cos(x),tan(x)
     asin(x),acos(x),atan(x)
     sinh(x),cosh(x),tanh(x)
@@ -69,7 +67,7 @@ def run_app(event):
     time.sleep(0.3)
     root.update()
     f = open('genetic_alg.txt', 'r')
-    x = [_down+(_up - _down)/10000*i for i in range(10000)]
+    x = [_down+(_up - _down)/2000*i for i in range(2000)]
     root.update()
     y = [_func_py.subs('x', i) for i in x]
     root.update()
