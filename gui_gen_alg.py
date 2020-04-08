@@ -7,6 +7,32 @@ from math import *
 import subprocess
 import time
 
+def info_func_button(s):
+    messagebox.showinfo('Возможные функции', """ 
+    (+) (-) (*) (/)   
+    pi, exp(x), sqrt(x)
+    abs(x),log(x) - base e
+    (**), ex. 2**3 = 8
+    log10(x) - base 10
+    log2(x) - base 2
+    sin(x),cos(x),tan(x)
+    asin(x),acos(x),atan(x)
+    sinh(x),cosh(x),tanh(x)
+    asinh(x),acosh(x),atanh(x)
+    """)
+    return
+    
+def write_module_file(func):
+    wr = """module Func_opt where
+import Prelude 
+func_opt :: Double -> Double
+func_opt x = {}
+""".format(func)
+    f = open('func_opt.hs', 'w')
+    f.write(wr)
+    f.close()
+    return 
+
 def run_app(event):
     try:
         _func = func.get()
@@ -14,12 +40,13 @@ def run_app(event):
         _up = float(up_bord.get())
         _delta = float(delta.get())
         _popul = int(popul.get())
-        _type_select = select_list.get()
-        _type_cross = cross_list.get()
+        _type_select = all_select[select_list.get()]
+        print(_type_select)
+        _type_cross = all_crossing[cross_list.get()]
         _cross_m = int(cross_n.get())
         _cross_p = float(cross_p.get())
         _mutat_p = float(mut_p.get())
-        _type_end = end.get()
+        _type_end = end_list[end.get()]
         _end_n = int(end_n.get())
     except:
         messagebox.showinfo('Неправильный ввод', 'Неправильный формат данных, или не все поля заполнены!')
@@ -31,17 +58,24 @@ def run_app(event):
     except:
         messagebox.showinfo('Неправильный ввод', 'Неправильно описана функция. Используйте наименование аргумента, как "x"!')
         return
-    #print(_func, _down, _up, _delta, _popul, _type_select, _type_cross, 
-    #    _cross_m, _cross_p, _mutat_p, _type_end,_end_n)
+    write_module_file(_func)
+    comp = subprocess.Popen(["ghc","Genetic_alg.hs"])
+    err = comp.wait()
+    if err != 0:
+        messagebox.showinfo('Ошибка', 'Ошибка в функции')
+        return
+    command = "Genetic_alg.exe {} {} {} {} {} {} {} {} {} {} {}".format(_down,_up,_delta,_popul, _type_select,_type_cross,_cross_m, _cross_p, _mutat_p, _type_end, _end_n)
+    go_compute = subprocess.Popen(command.split())
+    time.sleep(0.3)
+    root.update()
     f = open('genetic_alg.txt', 'r')
-    x = [_down+(_up - _down)/1000*i for i in range(1000)]
+    x = [_down+(_up - _down)/10000*i for i in range(10000)]
     root.update()
     y = [_func_py.subs('x', i) for i in x]
     root.update()
     if chk_state.get():
         tab_multiplexor.select(1)
         for line in f:
-            time.sleep(0.3)
             if line.split(" ")[0] != "Result:":
                 list_vis_x = []
                 list_vis_y = []
@@ -55,9 +89,6 @@ def run_app(event):
                         continue
                 fig, ax = plt.subplots(figsize=(4.6,2.5))
                 ax.set_title(_func)
-                #ax.set_title('Генетический алгоритм')
-                #ax.set_xlabel('x')
-                #ax.set_ylabel(_func)
                 ax.grid()      # включение отображение сетки
                 ax.plot(x, y)
                 ax.scatter(x = list_vis_x, y = list_vis_y, color="red")
@@ -115,7 +146,7 @@ tab_multiplexor.add(tab_result, text='Результат')
 beaut = Label(tab_parameters, text = 'Введите необходимые параметры ГА:', width=50,height=1,fg='black',font='arial 10')
 beaut.grid(row = 1, column = 0, columnspan = 20)
 func_info = Label(tab_parameters, text = 'Функция y = f(x) =  ', width = 14, height = 1,  fg = 'black',font='arial 10')
-func_info.grid(row=2, column =1, columnspan = 3)
+func_info.grid(row=2, column =1, columnspan = 2)
 func = Entry (tab_parameters, width = 30)
 func.grid (row = 2, column = 4,columnspan = 3)
 down_bord_i = Label(tab_parameters, text = 'Аргументы от ', width = 10, height = 1,  fg = 'black',font='arial 10')
@@ -128,22 +159,22 @@ up_bord = Entry (tab_parameters, width = 5)
 up_bord.grid (row = 3, column = 4)
 delta_info = Label(tab_parameters, text = ' с погреш. ', width = 7, height = 1,  fg = 'black',font='arial 10')
 delta_info.grid(row=3, column = 5)
-delta = Spinbox (tab_parameters, value = [i*0.001 for i in range(1,10001,10)], width=5)
+delta = Spinbox (tab_parameters, value = [0.001,0.01,0.1,1,10], width=5)
 delta.grid (row = 3, column = 6)
 popul_info = Label(tab_parameters, text = 'Особей в популяции: ', width = 20, height = 1,  fg = 'black',font='arial 10')
 popul_info.grid(row=4, column =1, columnspan = 3)
 popul = Entry (tab_parameters, width = 5)
 popul.grid (row = 4, column = 4)
-all_select = ('Колесо рулетки','Стох.универ.выб.','Турнирный выбор','Ранговый выбор', 'Случайный выбор')
+all_select = {'Колесо рулетки':1,'Стох.универ.выб.':2,'Турнирный выбор':3,'Ранговый выбор':4, 'Случайный выбор':5}
 select_info = Label(tab_parameters, text = 'Тип селекции', width = 20, height = 1,  fg = 'black',font='arial 10')
 select_info.grid(row=5, column =1, columnspan = 2)
-select_list = Combobox(tab_parameters, width =20, height = 1, value = all_select)
+select_list = Combobox(tab_parameters, width =20, height = 1, value = list(all_select.keys()))
 select_list.current(0)
 select_list.grid( row = 6, column = 1, columnspan = 2)
-all_crossing = ('M-точечный','"Единый"')
+all_crossing = {'M-точечный':1,'"Единый"':2}
 cross_info = Label(tab_parameters, text = 'Тип кроссинговера', width = 20, height = 1,  fg = 'black',font='arial 10')
 cross_info.grid(row=5, column =3, columnspan = 2)
-cross_list = Combobox(tab_parameters, width =20, height = 5, value = all_crossing)
+cross_list = Combobox(tab_parameters, width =20, height = 5, value = list(all_crossing.keys()))
 cross_list.current(0)
 cross_list.grid( row = 6, column = 3, columnspan = 2)
 cross_n_i = Label(tab_parameters, text = 'M: ', width = 2, height = 1,  fg = 'black',font='arial 10')
@@ -158,10 +189,10 @@ mut_p_i = Label(tab_parameters, text = 'Вероятн. мутации:', width 
 mut_p_i.grid(row=7, column =4, columnspan = 2)
 mut_p = Spinbox (tab_parameters, value = [x*0.01 for x in range(1,21)], width=5)
 mut_p.grid (row = 7, column = 6)
-end_list = ["Без улучшений N популяций", "Произвести N популяций", "Где функция достигает N"]
+end_list = {"Без улучшений N популяций":1, "Произвести N популяций":2, "Где функция достигает N":3}
 end_info = Label(tab_parameters, text = 'Критерий остановки алгоритма', width = 27, height = 1,  fg = 'black',font='arial 10')
 end_info.grid(row=8, column =1, columnspan = 4)
-end = Combobox(tab_parameters, width =27, height = 1, value = end_list)
+end = Combobox(tab_parameters, width =27, height = 1, value = list(end_list.keys()))
 end.current(1)
 end.grid(row = 9, column = 1, columnspan = 4)
 end_n_i = Label(tab_parameters, text = 'N: ', width = 1, height = 1,  fg = 'black',font='arial 10')
@@ -175,5 +206,8 @@ chk.grid(column=1, row=10, columnspan = 2, pady=10)
 run_gen_alg_button = Button(tab_parameters,  text = 'Запустить', width = 10, height = 2, bg = 'green',fg = 'black', font = 'arial 10')
 run_gen_alg_button.grid(row=10, column = 5, columnspan = 3)
 run_gen_alg_button.bind("<Button-1>", run_app)
+info_func = Button(tab_parameters,  text = '?', width = 1, height = 1, bg = 'gray',fg = 'black', font = 'arial 10')
+info_func.grid(row=2, column = 3, columnspan = 1)
+info_func.bind("<Button-1>", info_func_button)
 tab_multiplexor.pack(expand=1, fill='both')  
 root.mainloop()

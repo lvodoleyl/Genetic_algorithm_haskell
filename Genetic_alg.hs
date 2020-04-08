@@ -1,10 +1,10 @@
-module GENETIC where
 import Mutation 
 import Selection 
 import Crossingover
 import Random_ 
 import Common
 import Prelude
+import Func_opt
 import Result
 import System.Environment
 import System.IO.Unsafe
@@ -53,21 +53,20 @@ multiplexor_end (P popul sel c c_n c_p m_p s s_n) o fen
 
 main::IO()
 main = do
-    x <- getArgs
-    print x
+    args <- getArgs
     clear_file
-    p1 <- return $ (\x -> sin(x*0.1)*exp(x*0.01)) -- функция
-    p2 <- return $ 0.0 --нижняя граница
-    p3 <- return $ 700.0 --верхняя граница
-    p4 <- return $ 0.01 --погрешность или шаг
-    p5 <- return $ 30 --количество особей в популяции
-    p6 <- return $ 2 --тип селекции 1 - рулетка, 2 - стохастика, 3 -турнир, 4 - ранг, 5 - сл.в.
-    p7 <- return $ 1 --тип кроссовера 1 - многоточ, 2 - единый
-    p8 <- return $ 3 --количество точек кроссинговера (1 - одноточечный)
-    p9 <- return $ 1.0 --вероятность кроссинговера
-    p10 <-return $ 0.5 --вероятность мутации
-    p11 <-return $ 1 --критерий остановки 1 - не улучшается N популяций, 2 - лимит популяции, 3 - минимальный прикол
-    p12 <-return $ 150 --либо популяций ,либо минимальное значение фитнесс-функции
+    p1 <- return $ func_opt -- функция
+    p2 <- return $ str_double $ args !! 0 --нижняя граница
+    p3 <- return $ str_double $ args !! 1 --верхняя граница
+    p4 <- return $ str_double $ args !! 2 --погрешность или шаг
+    p5 <- return $ str_int $ args !! 3 --количество особей в популяции
+    p6 <- return $ str_int $ args !! 4 --тип селекции 1 - рулетка, 2 - стохастика, 3 -турнир, 4 - ранг, 5 - сл.в.
+    p7 <- return $ str_int $ args !! 5 --тип кроссовера 1 - многоточ, 2 - единый
+    p8 <- return $ str_int $ args !! 6 --количество точек кроссинговера (1 - одноточечный)
+    p9 <- return $ str_double $ args !! 7 --вероятность кроссинговера
+    p10 <-return $ str_double $ args !! 8 --вероятность мутации
+    p11 <-return $ str_int $ args !! 9 --критерий остановки 1 - не улучшается N популяций, 2 - лимит популяции, 3 - минимальный прикол
+    p12 <-return $ str_int $ args !! 10 --либо популяций ,либо минимальное значение фитнесс-функции
     p <- return $ P p5 p6 p7 p8 p9 p10 p11 p12
     n_gen <- return $ (getNumberGen p2 p3 p4)
     g <- return $ init_gens p5 n_gen
@@ -76,5 +75,4 @@ main = do
     res <- return $ max_fen (unsafePerformIO f) (Fen (Gen [0] 0) (-1000000.0) 0)
     print $ res
     write_to_file (result_string o res)
-    --print $ form_string o f
     return()
