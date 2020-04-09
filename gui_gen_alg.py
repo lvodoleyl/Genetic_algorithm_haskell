@@ -39,7 +39,6 @@ def run_app(event):
         _delta = float(delta.get())
         _popul = int(popul.get())
         _type_select = all_select[select_list.get()]
-        print(_type_select)
         _type_cross = all_crossing[cross_list.get()]
         _cross_m = int(cross_n.get())
         _cross_p = float(cross_p.get())
@@ -90,8 +89,6 @@ def run_app(event):
                 ax.grid()      # включение отображение сетки
                 ax.plot(x, y)
                 ax.scatter(x = list_vis_x, y = list_vis_y, color="red")
-                print(list_vis_x)
-                print(list_vis_y)
                 fig.savefig('gen_alg')
                 im = PhotoImage(file='gen_alg.png')
                 modeling = Label(tab_models, image=im)
