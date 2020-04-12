@@ -71,8 +71,8 @@ main = do
     n_gen <- return $ (getNumberGen p2 p3 p4)
     g <- return $ init_gens p5 n_gen
     o <- return $ Opt p2 p3 (correction_step n_gen p2 p3) p1
-    f <- return $ multiplexor_end p o (list_fen g o)
-    res <- return $ max_fen (unsafePerformIO f) (Fen (Gen [0] 0) (-1000000.0) 0)
+    f <- multiplexor_end p o (list_fen g o)
+    res <- return $ max_fen f (Fen (Gen [0] 0) (-1000000.0) 0)
     print $ res
     write_to_file (result_string o res)
     return()
